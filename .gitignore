@@ -1,0 +1,7 @@
+node_modules/
+.workbuddy-ai/
+*.log
+*.bak*
+示例输出/
+.DS_Store
+Thumbs.db
