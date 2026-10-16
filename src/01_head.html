@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>报价单助手</title>
+<style>
+*{box-sizing:border-box}
+:root{
+--bg:#f3f6f4;--panel:#fff;--line:#e1e7e3;--line2:#c4d0c9;
+--txt:#23352c;--txt2:#58685f;--txt3:#718078;
+--acc:#176b51;--acc-bg:#edf6f1;--acc-line:#b4d8c4;
+--red:#c0392b;--red-bg:#fdecea;
+--warn:#8a5a00;--warn-bg:#fff8e1;--warn-line:#f0d08a;
+--ok:#1a7f4b;--ok-bg:#e9f7ef;
+}
+html,body{margin:0;padding:0;min-height:100%}
+body{font-family:"Microsoft YaHei UI","Microsoft YaHei","Segoe UI",sans-serif;font-size:14px;color:var(--txt);background:var(--bg);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;font-size:13px;font-weight:500;color:var(--txt);background:var(--panel);border:1px solid var(--line2);border-radius:6px;padding:8px 14px;cursor:pointer;line-height:1.5}
+button:hover{background:#f0f2f5}
+button.primary{background:var(--acc);border-color:var(--acc);color:#fff}
+button.primary:hover{background:#10553e;border-color:#10553e}
+button.tiny{padding:5px 9px;font-size:12px;border-radius:4px}
+button.danger{color:var(--red);border-color:#e8b4ad}
+input,select,textarea{font-family:inherit;font-size:14px;color:var(--txt);background:var(--panel);border:1px solid var(--line2);border-radius:5px;padding:8px 10px;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc-bg)}
+textarea{resize:vertical;line-height:1.6}
+h3{margin:0 0 12px;font-size:14px;font-weight:600;color:var(--txt)}
+.topbar{display:flex;align-items:center;gap:16px;padding:16px 24px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50}
+.brand{font-size:18px;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:10px}
+.brand .ver{font-size:12px;font-weight:400;color:var(--txt3);margin-left:2px}
+.topbtns{margin-left:auto;display:flex;gap:8px;align-items:center;justify-content:flex-end}
+.layout{display:grid;grid-template-columns:248px minmax(0,1fr);gap:24px;padding:24px 24px 96px;max-width:1600px;margin:0 auto;align-items:start}
+.side{position:sticky;top:100px;max-height:calc(100vh - 174px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:20px 16px}
+.side-sec{margin-bottom:20px}
+.side-sec:last-child{margin-bottom:0}
+.tpl-item,.mat-item{display:block;width:100%;text-align:left;border:none;background:none;padding:10px 10px;border-radius:5px;font-size:13px;color:var(--txt2);cursor:pointer;line-height:1.6}
+.tpl-item:hover,.mat-item:hover{background:#eef1f5;color:var(--txt)}
+.tpl-item.on{background:var(--acc-bg);color:var(--acc);font-weight:600;box-shadow:inset 3px 0 var(--acc)}
+.mat-group{font-size:11px;color:var(--txt3);padding:8px 8px 3px;font-weight:600}
+.mat-head{display:flex;align-items:center;gap:6px;width:100%;text-align:left;border:none;background:none;
+  padding:8px 8px;border-radius:6px;font-size:13px;font-weight:600;color:var(--txt2);cursor:pointer;line-height:1.5}
+.mat-head:hover{background:#eef1f5}
+.mat-head .arw{font-size:10px;color:var(--txt3);width:9px;flex:0 0 9px}
+.mat-head .cnt{margin-left:auto;font-weight:400;color:var(--txt3);font-size:11.5px}
+.mat-head.open{color:var(--acc)}
+.matrow{display:flex;gap:5px;align-items:center;margin-bottom:5px}
+.matrow input,.matrow select{font-size:11.5px;padding:3px 5px;min-width:0}
+.matrow .tiny{padding:2px 6px}
+.matitem{border:1px solid var(--line);border-radius:7px;padding:7px 8px;margin-bottom:7px;background:#fcfcfd}
+.matitem .matrow{margin-bottom:0}
+.matname{font-size:11.5px;color:var(--txt);padding:3px 5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.matunits{margin-top:6px;padding:7px 8px;border-top:1px dashed var(--line2);background:#f7f8fa;border-radius:0 0 6px 6px}
+.matunits .matrow{margin-bottom:4px}
+.matunits .matrow:last-child{margin-bottom:0}
+.mat-item .mp{float:right;color:var(--txt3);font-size:11.5px;padding-left:8px}
+/* 物料行用 flex：名称过长时省略号，价格靠右 */
+.mat-item{display:flex;align-items:center;gap:8px}
+.mat-item > span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mat-item .mp{float:none;margin-left:auto;flex:0 0 auto}
+.mat-item + .mat-item{box-shadow:inset 0 1px 0 #f0f2f5}
+.layout-list label{display:flex;align-items:flex-start;gap:7px;padding:6px 9px;font-size:12.5px;line-height:1.5;color:var(--txt2);cursor:pointer;border-radius:6px}
+.layout-list label:hover{background:#eef1f5}
+.layout-list input{width:auto;margin-top:3px;flex:0 0 auto}
+/* 顶部横向：版式 / 列结构 各自排成一行卡片 */
+.pick-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.pick-list label{border:1px solid var(--line);border-radius:8px;padding:8px 10px;align-items:center;background:#fff}
+.pick-list label:hover{border-color:var(--acc-line);background:var(--acc-bg)}
+.pick-list label:has(input:checked){border-color:var(--acc);background:var(--acc-bg);color:var(--acc)}
+.pick-list label:has(input:checked) span{font-weight:600}
+.work{display:flex;flex-direction:column;gap:0;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.card{background:var(--panel);border:none;border-top:1px solid var(--line);border-radius:0;padding:24px}
+.meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 24px}
+.fld{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:0}
+.fld>span{flex:none;font-size:13px;color:var(--txt2);text-align:left}
+.fld>input{flex:1;min-width:0}
+.sec-title{font-size:14px;font-weight:600;color:var(--txt);margin:0 0 12px}
+.tbl-wrap{overflow:auto;border:1px solid var(--line);border-radius:6px;max-height:60vh;scroll-margin-top:104px}
+table.grid{border-collapse:separate;border-spacing:0;width:100%;font-size:13px;table-layout:fixed;min-width:1100px}
+table.grid th{position:sticky;top:0;z-index:2;background:#f2f5f3;border-bottom:1px solid var(--line2);padding:12px 6px;font-weight:600;color:var(--txt2);text-align:left;white-space:nowrap;font-size:12px}
+table.grid td{border-bottom:1px solid var(--line);padding:7px 4px;vertical-align:middle}
+table.grid tr.opt td{background:var(--red-bg)}
+table.grid tr.opt input{background:#fffaf9}
+table.grid td input,table.grid td select{padding:7px 5px;font-size:13px;border-color:transparent;background:transparent;border-radius:4px}
+table.grid td input:hover{border-color:var(--line2);background:#fff}
+table.grid td input:focus{border-color:var(--acc);background:#fff}
+table.grid td.num input{text-align:right}
+table.grid td.out{text-align:right;padding-right:7px;font-variant-numeric:tabular-nums;color:var(--txt2);white-space:nowrap}
+table.grid td.out.gift{color:var(--red)}
+table.grid td.out.calc{color:var(--txt);font-weight:600}
+table.grid td.idx{text-align:center;color:var(--txt3);font-size:11px}
+.row-index{display:flex;align-items:center;justify-content:center;gap:3px}
+table.grid .row-drag{width:20px;height:30px;padding:0;border:0;background:transparent;color:var(--txt3);font-size:19px;cursor:grab;flex-shrink:0}
+table.grid .row-drag:hover,table.grid .row-drag:focus-visible{color:var(--acc);background:var(--acc-bg)}
+table.grid .row-drag:active{cursor:grabbing}
+table.grid tr.dragging{opacity:.45}
+table.grid tr.drop-before td{box-shadow:inset 0 3px 0 var(--acc)}
+table.grid tr.drop-after td{box-shadow:inset 0 -3px 0 var(--acc)}
+table.grid td.unit-cell input,table.grid td.unit-cell select{padding-left:4px;padding-right:4px}
+table.grid td.act{text-align:center;white-space:nowrap}
+table.grid td.act button{padding:1px 5px;font-size:11px;border-radius:4px}
+table.grid td.chk{text-align:center}
+table.grid td.chk input{width:auto}
+table.grid tr.grp td{background:#eef2f7;border-top:1px solid var(--line2);border-bottom:1px solid var(--line2)}
+table.grid tr.grp input{font-weight:600;color:var(--acc)}
+table.grid tr.sub td{background:#fafbfc;font-weight:600}
+table.grid tr.sub td.out{color:var(--txt)}
+table.grid tr.sub input{font-weight:600}
+table.grid td.imgc{text-align:center;padding:2px 3px}
+.imgbox{position:relative;display:inline-block}
+.imgbox img{width:46px;height:34px;object-fit:cover;border:1px solid var(--line2);border-radius:3px;display:block;cursor:pointer}
+.imgbox img:hover{border-color:var(--acc)}
+.imgbox .rm{position:absolute;right:-5px;top:-5px;width:13px;height:13px;line-height:11px;padding:0;border-radius:50%;
+  border:none;background:var(--red);color:#fff;font-size:9px;cursor:pointer;text-align:center;font-weight:700;opacity:.8}
+.imgbox .rm:hover{opacity:1}
+table.grid td.imgc .addimg{width:28px;height:24px;border:1px dashed var(--line2);background:none;border-radius:4px;
+  color:var(--txt3);cursor:pointer;font-size:14px;line-height:1;padding:0}
+table.grid td.imgc .addimg:hover{border-color:var(--acc);color:var(--acc);background:var(--acc-bg)}
+.imglist{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:10px}
+.imgitem{border:1px solid var(--line);border-radius:8px;padding:7px;background:#fafbfc;display:flex;flex-direction:column;gap:6px}
+.imgitem img{width:100%;height:92px;object-fit:contain;background:#fff;border-radius:4px;border:1px solid var(--line)}
+.imgitem input{font-size:11px;padding:3px 6px}
+.imgitem .row{display:flex;gap:4px}
+.imgitem .row button{flex:1;padding:2px 0;font-size:11px}
+.drop{border:1.5px dashed var(--acc-line);background:var(--acc-bg);border-radius:8px;padding:18px;text-align:center;color:var(--acc);font-size:12.5px;line-height:1.7}
+.pvbox{background:#fff;border:1px solid var(--line);border-radius:8px;padding:22px 26px;max-height:64vh;overflow:auto}
+.pvnote{font-size:12px;color:var(--txt3);margin:0 0 10px;line-height:1.6}
+.pickrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
+.pickcard{border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;background:#fff}
+.pickcard:hover{border-color:var(--acc-line);background:var(--acc-bg)}
+.pickcard.on{border:2px solid var(--acc);background:var(--acc-bg);padding:9px 11px}
+.pickcard b{display:block;font-size:12.5px;margin-bottom:3px}
+.pickcard span{font-size:11px;color:var(--txt3);line-height:1.5}
+.rowbtns{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+.totgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tot{background:#f4f7f5;border-radius:5px;padding:12px}
+.tot .lb{font-size:12px;color:var(--txt2);margin-bottom:8px}
+.tot .vl{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:6px}
+.tot .vl input{font-size:17px;font-weight:600;padding:1px 5px;width:100%;font-variant-numeric:tabular-nums}
+.tot .vl .cur{font-size:12px;color:var(--txt3);font-weight:400}
+.alert{margin-top:10px;border:1px solid var(--warn-line);background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:8px 11px;font-size:12px;line-height:1.6}
+.alert.ok{border-color:#b7e0c7;background:var(--ok-bg);color:var(--ok)}
+.alert b{font-weight:600}
+.hint{font-size:12px;color:var(--txt3);margin-top:8px;line-height:1.7}
+.modal{position:fixed;inset:0;background:rgba(24,28,34,.42);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:60px 20px;overflow:auto}
+.modal.hidden{display:none}
+.mbox{background:var(--panel);border-radius:8px;width:min(1080px,100%);padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.18)}
+.mbox h2{margin:0 0 14px;font-size:15px;font-weight:600}
+.mclose{float:right;border:none;background:none;font-size:18px;color:var(--txt3);cursor:pointer;padding:0 4px;line-height:1}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px 14px}
+.hist-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:7px}
+.hist-item .hi-main{flex:1;min-width:0}
+.hist-item .hi-t{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-item .hi-s{font-size:11px;color:var(--txt3);margin-top:2px}
+#printArea{display:none}
+.sheet tr.p-grp td{background:#eee;font-weight:700;text-align:left;padding:5px 6px}
+.sheet tr.p-sub td{font-weight:600}
+.sheet .p-imgs{display:grid;gap:12px;margin-top:14px}
+.sheet .p-imgs.cols1{grid-template-columns:1fr}
+.sheet .p-imgs.cols2{grid-template-columns:1fr 1fr}
+.sheet .p-imgs figure{margin:0;break-inside:avoid;page-break-inside:avoid}
+.sheet .p-imgs img{width:100%;border:1px solid #bbb;display:block}
+.sheet .p-imgs figcaption{font-size:10.5px;color:#555;margin-top:3px;text-align:center}
+.sheet td img.cellimg{max-width:100%;max-height:200px;display:block;margin:0 auto 5px;border:1px solid #ccc}
+.sheet td.hasimg{vertical-align:bottom}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#22262c;color:#fff;padding:9px 18px;border-radius:8px;font-size:12.5px;z-index:400;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+
+[hidden]{display:none!important}
+button:focus-visible,summary:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
+button:disabled{opacity:.5;cursor:default}
+.brand-mark{display:grid;place-items:center;width:32px;height:36px;border:1.5px solid var(--acc);border-radius:3px;color:var(--acc);font-size:22px;font-weight:400}
+.top-context{font-size:12px;color:var(--txt3);padding-left:16px;border-left:1px solid var(--line)}
+.tools-menu{position:relative}
+.tools-menu>summary,.row-tools>summary{list-style:none;cursor:pointer;font-size:13px;padding:8px 12px;border:1px solid var(--line2);border-radius:6px}
+summary::-webkit-details-marker{display:none}
+.tools-panel{position:absolute;right:0;top:calc(100% + 8px);min-width:176px;background:#fff;border:1px solid var(--line2);border-radius:6px;padding:6px;box-shadow:0 8px 24px #23352c12;z-index:60}
+.tools-panel button{display:block;border:none;width:100%;text-align:left}
+.side-intro{margin:0 0 16px;font-size:12px;color:var(--txt2);line-height:1.7}
+.side-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.side-tabs button{flex:1;border:0;border-radius:0;padding:10px 0;color:var(--txt2)}
+.side-tabs button[aria-selected="true"]{box-shadow:inset 0 -2px var(--acc);color:var(--acc);font-weight:600}
+.tpl-category{margin:16px 0 6px;padding:0 10px;color:var(--txt3);font-size:12px;font-weight:400}
+/* 模板行：正常态整行可点；「管理」态下右侧露出改名 / 删除 */
+.tpl-rowwrap{display:flex;gap:4px;align-items:center}
+.tpl-rowwrap .tpl-item{flex:1;min-width:0;display:flex;align-items:center;gap:6px}
+.tpl-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tpl-tag{flex:0 0 auto;font-size:11px;font-weight:400;color:var(--txt3)}
+.tpl-item.on .tpl-tag{color:var(--acc)}
+.tpl-mini{flex:0 0 auto;padding:4px 7px;font-size:11.5px;border-radius:4px;color:var(--txt2)}
+.tpl-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.workspace-intro{padding:24px 24px 20px}
+.workspace-intro h1{font-size:25px;letter-spacing:-.5px;line-height:1.4;margin:0 0 8px;font-weight:600}
+.workspace-intro p{margin:0;font-size:13px;color:var(--txt2);line-height:1.7}
+.workflow{display:flex;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:0 24px;background:#fafcfb}
+.workflow button{flex:1;display:flex;align-items:center;gap:10px;border:0;border-radius:0;padding:16px 0;background:transparent;text-align:left;color:var(--txt2)}
+.workflow button span{display:grid;place-items:center;width:24px;height:24px;border:1px solid var(--line2);border-radius:50%;font-size:12px;background:#fff}
+.workflow button.is-current{color:var(--acc);font-weight:600}
+.workflow button.is-current span{color:#fff;background:var(--acc);border-color:var(--acc)}
+.section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.section-heading h2{font-size:16px;line-height:1.5;font-weight:600;margin:0}
+.section-heading .hint{margin:0}
+.section-number{font-size:12px;color:var(--acc);margin-right:8px}
+.disclosure{padding:0}
+.disclosure>summary{display:flex;justify-content:space-between;gap:16px;padding:20px 24px;font-size:14px;font-weight:600;cursor:pointer;list-style:none}
+.disclosure>summary::after,.inline-details>summary::after{content:'＋';font-weight:400;color:var(--txt3)}
+.disclosure[open]>summary::after,.inline-details[open]>summary::after{content:'−'}
+.disclosure>summary .summary-note{font-size:12px;font-weight:400;color:var(--txt3);margin-left:auto}
+.disclosure-content{padding:0 24px 24px}
+.inline-details{margin-top:16px}
+.inline-details>summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;font-size:12px;color:var(--txt2);width:fit-content}
+.inline-details .meta{margin-top:16px}
+.inline-details .rowbtns{margin-top:16px}
+.field-pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.empty-guide{background:#f4f8f5;padding:24px;border:1px dashed var(--acc-line);border-radius:6px;margin-bottom:16px}
+.empty-guide h3{font-size:17px;margin:0 0 8px}
+.empty-guide p{font-size:13px;color:var(--txt2);margin:0 0 16px;line-height:1.7}
+.empty-guide .rowbtns{margin:0}
+.editor-note{font-size:12px;color:var(--txt2);margin:0 0 12px;line-height:1.6}
+.quantity-key{display:inline-block;width:9px;height:9px;background:var(--acc-bg);border:1px solid var(--acc-line);border-radius:2px;margin-right:6px}
+table.grid td .c-qty{background:var(--acc-bg);border:1px solid var(--acc-line);color:var(--acc);font-weight:600}
+table.grid tr.opt .c-qty{background:var(--red-bg);border-color:#eacac6;color:var(--red)}
+table.grid .row-more{font-size:16px;width:34px;height:28px;padding:0;letter-spacing:1px;border:0;color:var(--txt2)}
+.row-action-menu{position:fixed;z-index:150;background:#fff;border:1px solid var(--line2);border-radius:6px;padding:6px;min-width:140px;box-shadow:0 8px 24px #23352c18}
+.row-action-menu button{display:block;border:0;width:100%;text-align:left}
+.row-action-menu button:last-child{color:var(--red)}
+.quote-summary{display:flex;align-items:baseline;gap:24px;flex-wrap:wrap}
+.quote-summary .quote-value{font-family:"Segoe UI","Microsoft YaHei",sans-serif;font-size:32px;line-height:1.3;font-weight:600;font-variant-numeric:tabular-nums;color:var(--acc)}
+.quote-summary .quote-label{font-size:13px;color:var(--txt2)}
+.quote-summary .quote-extra{font-size:13px;color:var(--txt2)}
+.statusbar{position:fixed;bottom:0;left:0;right:0;z-index:40;background:#fff;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 24px;font-size:12px;color:var(--txt2)}
+.save-status{display:flex;align-items:center;gap:8px}
+.save-status::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--ok)}
+.save-status[data-state="saving"]::before{background:var(--warn)}
+.save-status[data-state="error"]{color:var(--red)}
+.save-status[data-state="error"]::before{background:var(--red)}
+.statusbar .status-right{display:flex;align-items:center;gap:16px}
+.row-highlight{animation:row-highlight 1.3s ease-out}
+@keyframes row-highlight{from{background:#d4ebdd}to{background:transparent}}
+@media(max-width:1100px){.layout{grid-template-columns:218px minmax(0,1fr);gap:16px;padding:16px 16px 88px}.card,.workspace-intro{padding:20px}.top-context{display:none}.disclosure>summary{padding:20px}.disclosure-content{padding:0 20px 20px}}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.side{position:static;max-height:310px;padding:16px}.side-intro{margin-bottom:8px}.side-tabs{margin-bottom:8px}.topbar{padding:12px 16px;flex-wrap:wrap;gap:8px}.brand{font-size:16px}.topbtns{gap:6px}.topbtns button{padding:7px 10px}.brand .ver{display:none}.workflow{padding:0 16px}.workflow button{font-size:12px;gap:6px}.workflow button span{width:22px;height:22px}.workspace-intro h1{font-size:21px}.statusbar{padding:10px 16px}.statusbar .status-right>span{display:none}.totgrid{grid-template-columns:1fr 1fr}.pickrow{grid-template-columns:1fr}.disclosure>summary .summary-note{display:none}}
+@media(max-width:460px){.brand-mark{display:none}.layout{padding:12px 12px 88px}.card,.workspace-intro{padding:16px}.meta,.field-pair{grid-template-columns:1fr;gap:12px}.workflow{padding:0 12px}.workflow button{gap:5px;font-size:11px}.section-heading{align-items:flex-start;flex-wrap:wrap}.disclosure>summary{padding:16px}.disclosure-content{padding:0 16px 16px}.statusbar{font-size:11px}.statusbar .status-right{gap:8px}.statusbar button{font-size:12px;padding:6px 10px}}
+@media(prefers-reduced-motion:reduce){.row-highlight{animation:none}.toast{transition:none}}
+
+@media print{
+.topbar,.side,.rowbtns,.hint,.no-print,.modal,.statusbar,.row-action-menu{display:none!important}
+body{background:#fff}
+.layout{display:none}
+#printArea{display:block;padding:0}
+}
+.sheet .p-title{font-size:19px;font-weight:700;text-align:center;margin:0 0 4px}
+.sheet .p-sub{font-size:11px;color:#666;text-align:center;margin:0 0 12px}
+.sheet .p-meta{font-size:11.5px;color:#333;margin:0 0 8px;line-height:1.9}
+.sheet .p-meta span{margin-right:22px}
+.sheet .p-note{font-size:11.5px;color:#444;line-height:1.7;margin:0 0 10px;white-space:pre-wrap}
+.sheet table{width:100%;border-collapse:collapse;font-size:11.5px}
+.sheet th,.sheet td{border:1px solid #999;padding:4px 6px;vertical-align:middle}
+.sheet th{background:#eee;font-weight:600;text-align:center}
+.sheet td.r{text-align:right}
+.sheet td.c{text-align:center}
+.sheet tr.opt td{color:#c0392b}
+.sheet .p-foot{margin-top:12px;font-size:11.5px;color:#444;line-height:1.8;white-space:pre-wrap}
+
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true">≡</span>报价单助手<span class="ver">本机版</span></div>
+  <span class="top-context">从清单到报价，一张表就够了</span>
+  <div class="topbtns">
+    <button id="btnNew">新建报价</button>
+    <button id="btnPreview">预览报价</button>
+    <button id="btnXlsx" class="primary">导出 Excel</button>
+    <details class="tools-menu" id="topTools">
+      <summary aria-label="更多工具">更多 ▾</summary>
+      <div class="tools-panel">
+        <button id="btnHistory">历史报价单</button>
+        <button id="btnCompany">公司信息</button>
+        <button id="btnPrint">打印 / PDF</button>
+        <button id="btnExportJson">保存备份</button>
+        <button id="btnImport">打开备份</button>
+      </div>
+    </details>
+  </div>
+</header>
+<main class="layout">
+  <aside class="side" aria-label="模板和物料">
+    <p class="side-intro">先选一份模板。<br>模板是空的，内容自己填；填好也能存成模板。</p>
+    <div class="side-tabs" role="tablist" aria-label="开始方式">
+      <button id="tabTemplates" role="tab" aria-controls="templatePanel" aria-selected="true">选模板</button>
+      <button id="tabMaterials" role="tab" aria-controls="materialPanel" aria-selected="false" tabindex="-1">添加物料</button>
+    </div>
+    <div class="side-sec" id="templatePanel" role="tabpanel" aria-labelledby="tabTemplates"><h3 class="sr-only">整单模板</h3><div id="tplList"></div></div>
+    <div class="side-sec" id="materialPanel" role="tabpanel" aria-labelledby="tabMaterials" hidden>
+      <label class="sr-only" for="matSearch">搜索物料</label><input id="matSearch" placeholder="搜索摄像头、网线…" autocomplete="off">
+      <p class="hint">点击物料即可添加，接着填数量。</p>
+      <div id="matList"></div>
+      <div class="rowbtns"><button id="btnMatManage" class="tiny">管理物料库</button></div>
+    </div>
+  </aside>
+  <section class="work" aria-label="报价编辑工作区">
+    <div class="workspace-intro" id="workspaceIntro"><h1 id="workspaceTitle">选个模板，开始做报价。</h1><p id="templateStatus">模板会带好项目、说明和单价，你只需核对数量。</p></div>
+    <nav class="workflow" aria-label="报价操作步骤">
+      <button id="btnStepTemplate" class="is-current"><span>1</span>选择模板</button>
+      <button id="btnStepEdit"><span>2</span>修改报价</button>
+      <button id="btnStepPreview"><span>3</span>预览并导出</button>
+    </nav>
+    <section class="card" id="customerSection">
+      <div class="section-heading"><h2>这份报价给谁？</h2><span class="hint">单号和日期已自动填写</span></div>
+      <div class="meta">
+        <label class="fld" for="mCustomer"><span>客户 / 单位</span><input id="mCustomer" placeholder="例如：翔泰科技"></label>
+        <label class="fld" for="mProject"><span>项目名称</span><input id="mProject" placeholder="例如：一楼监控安装"></label>
+      </div>
+      <details class="inline-details" id="customerDetails"><summary>联系人、地址与单号</summary><div class="meta">
+        <label class="fld" for="mContact"><span>联系人（选填）</span><input id="mContact" placeholder="姓名"></label>
+        <label class="fld" for="mPhone"><span>电话（选填）</span><input id="mPhone" placeholder="联系电话"></label>
+        <label class="fld" for="mAddress"><span>地址（选填）</span><input id="mAddress" placeholder="项目地址"></label>
+        <label class="fld" for="mNo"><span>报价单号</span><input id="mNo" placeholder="自动生成"></label>
+        <label class="fld" for="mDate"><span>报价日期</span><input id="mDate" type="date"></label>
+      </div></details>
+    </section>
+    <section class="card" id="detailSection">
+      <div class="section-heading"><h2>核对项目，填好数量</h2><span class="hint" id="detailCount">还没有报价明细</span></div>
+      <div class="empty-guide" id="emptyGuide"><h3>先选一个模板。</h3><p>小监控、网络施工、门禁、道闸等 10 套模板都在左边，内容是空的，自己加就行。也可以直接手工添加第一项。</p><div class="rowbtns"><button id="btnChooseTemplate" class="primary">选择报价模板</button><button id="btnStartBlank">直接开始填写</button></div></div>
+      <div id="rowEditor" hidden><p class="editor-note"><span class="quantity-key"></span>浅绿色框填写数量，金额自动计算。拖动左侧 ⠿ 可调整行顺序，其他内容也可以直接修改。</p>
+      <div class="tbl-wrap"><table class="grid" id="rowsTable"><colgroup id="rowsCols"></colgroup><thead id="rowsHead"></thead><tbody id="rowsBody"></tbody></table></div></div>
+      <div class="rowbtns"><button id="btnAddMaterial">＋ 从物料库添加</button><button id="btnAddRow">＋ 添加空白行</button></div>
+      <details class="inline-details row-tools"><summary>分组、小计与更多操作</summary><div class="rowbtns"><button id="btnAddGroup">＋ 分组标题</button><button id="btnAddSub">＋ 小计</button><button id="btnMergeToggle">合并规则：自动</button><button id="btnClearRows" class="danger">清空明细</button></div><p class="hint">单价留空且已有数量或单位时按赠送处理；总价格也可填写固定金额、另配等文字。</p></details>
+    </section>
+    <section class="card" id="quoteSummary">
+      <div class="section-heading"><h2>报价金额</h2><span class="hint">修改明细后自动更新</span></div>
+      <div class="quote-summary"><div><span class="quote-label">基础报价</span> <span class="quote-value" id="summaryAmount">¥0</span></div><span class="quote-extra" id="summaryOptional">未添加选配项目</span></div>
+      <div id="totAlert" class="alert ok">添加明细后，这里会帮你核对报价。</div>
+      <details class="inline-details"><summary>查看含选配金额、调整实收</summary>
+      <div class="totgrid" style="margin-top:16px">
+        <div class="tot"><div class="lb">不含选配合计</div><div class="vl"><span class="cur">¥</span><input id="tNoOptSum" class="num" aria-label="不含选配合计" readonly></div></div>
+        <div class="tot"><div class="lb">不含选配 · 实收</div><div class="vl"><span class="cur">¥</span><input id="tNoOptNet" class="num" aria-label="不含选配实收"></div></div>
+        <div class="tot"><div class="lb">含选配合计</div><div class="vl"><span class="cur">¥</span><input id="tOptSum" class="num" aria-label="含选配合计" readonly></div></div>
+        <div class="tot"><div class="lb">含选配 · 实收</div><div class="vl"><span class="cur">¥</span><input id="tOptNet" class="num" aria-label="含选配实收"></div></div>
+      </div><div class="rowbtns"><button id="btnRound" class="tiny">实收抹零到整百</button><button id="btnNetAuto" class="tiny">恢复自动跟随合计</button></div><p id="netMode" class="hint"></p><p class="hint">明细合计：<b id="tRawSum">0</b> 元（不含赠送行）</p></details>
+    </section>
+    <details class="card disclosure" id="quoteTextOptions"><summary>报价说明与备注<span class="summary-note">选填，模板已带好常用内容</span></summary><div class="disclosure-content">
+      <label class="fld" for="docTitle"><span>报价单标题</span><input id="docTitle" placeholder="监控安装报价单"></label>
+      <div class="field-pair" style="margin-top:16px"><label class="fld" for="demand"><span>客户需求</span><textarea id="demand" rows="3" placeholder="描述客户需要哪些设备或服务"></textarea></label><label class="fld" for="notice"><span>报价说明</span><textarea id="notice" rows="3" placeholder="例如：报价含普票，不含显示器"></textarea></label></div>
+      <label class="fld" for="notes"><span>表尾备注（一行一条）</span><textarea id="notes" rows="3" placeholder="填写施工说明、售后约定等"></textarea></label>
+    </div></details>
+    <details class="card disclosure" id="imageOptions"><summary>产品图片<span class="summary-note" id="imageCount">选填，可以直接粘贴截图</span></summary><div class="disclosure-content">
+      <div class="rowbtns" style="margin:0 0 16px"><button id="btnAddImg">＋ 选择图片</button><button id="btnPasteHint">粘贴截图</button><button id="btnClearImg">清空图片</button><span class="hint" style="margin:0">排列</span><label><input type="radio" name="imgcols" value="1" style="width:auto">1 列</label><label><input type="radio" name="imgcols" value="2" style="width:auto">2 列</label><label><input type="checkbox" id="imgCap" style="width:auto">显示图注</label></div>
+      <div id="imgList"></div><p class="hint">按 Ctrl + V 粘贴截图。每行的配图可直接在明细表中添加。</p>
+    </div></details>
+    <details class="card disclosure" id="appearanceOptions"><summary>报价外观与列设置<span class="summary-note" id="appearanceStatus">标准横版</span></summary><div class="disclosure-content">
+      <div class="pickrow"><div><p class="sec-title">报价外观</p><div id="layoutList" class="layout-list pick-list"></div></div><div id="colModeWrap"><p class="sec-title">明细列设置</p><div id="colModeList" class="layout-list pick-list"></div></div></div><p class="hint">点击顶部「预览报价」，检查抬头、列顺序和产品图片。</p>
+    </div></details>
+  </section>
+</main>
+<footer class="statusbar"><span id="saveStatus" class="save-status" data-state="saved" role="status" aria-live="polite">内容自动保存在当前浏览器</span><div class="status-right"><span id="footerSummary">还没有报价明细</span><button id="btnFooterPreview">预览并导出</button></div></footer>
+<div id="rowActionMenu" class="row-action-menu" aria-label="行操作" hidden></div>
+<div id="printArea" class="sheet"></div>
+<div id="toast" class="toast" role="status"></div>
+<div id="modal" class="modal hidden"><div class="mbox" id="modalBox"></div></div>
+<datalist id="dlMat"></datalist><datalist id="dlUnit"></datalist><datalist id="dlLoc"></datalist>
